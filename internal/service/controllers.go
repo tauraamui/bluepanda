@@ -2,16 +2,16 @@ package service
 
 import (
 	"encoding/json"
+	"net/http"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/tauraamui/kvs/v2"
-	"github.com/tauraamui/kvs/v2/storage"
 	"github.com/tauraamui/redpanda/internal/logging"
 )
 
-func handleInserts(log logging.Logger, store storage.Store) fiber.Handler {
+func handleInserts(log logging.Logger, store kvs.KVDB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		ttype := c.Params("type")
 		uuidx := c.Params("uuid")
@@ -21,15 +21,16 @@ func handleInserts(log logging.Logger, store storage.Store) fiber.Handler {
 
 		entries := convertToEntries(ttype, resolveOwnerID(uuidx), uint32(0), data, true)
 
-		resp := strings.Builder{}
-		for i, entry := range entries {
-			resp.WriteString(string(entry.Key()))
-			if i+1 < len(entries) {
-				resp.WriteString(",")
+		for _, entry := range entries {
+			if err := kvs.Store(store, entry); err != nil {
+				log.Error().Msgf("failed to store entry: %v", err)
+				return c.SendStatus(http.StatusInternalServerError)
 			}
 		}
 
-		return c.SendString(resp.String())
+		log.Info().Msg("stored entry successfully...")
+
+		return nil
 	}
 }
 

@@ -8,7 +8,6 @@ import (
 	"github.com/dgraph-io/badger/v3"
 	"github.com/gofiber/fiber/v2"
 	"github.com/tauraamui/kvs/v2"
-	"github.com/tauraamui/kvs/v2/storage"
 	"github.com/tauraamui/redpanda/internal/logging"
 )
 
@@ -19,8 +18,8 @@ type Server interface {
 }
 
 type server struct {
-	store storage.Store
-	app   *fiber.App
+	db  kvs.KVDB
+	app *fiber.App
 }
 
 func New() (Server, error) {
@@ -40,12 +39,12 @@ func New() (Server, error) {
 	}
 
 	svr := server{
-		store: storage.New(db),
-		app:   fiber.New(fiber.Config{DisableStartupMessage: true}),
+		db:  db,
+		app: fiber.New(fiber.Config{DisableStartupMessage: true}),
 	}
 
 	log := logging.New()
-	svr.app.Post("/", handleInserts(log, svr.store))
+	svr.app.Post("/:type/:uuid", handleInserts(log, db))
 
 	return svr, nil
 }
@@ -55,7 +54,8 @@ func (s server) Listen(port string) error {
 }
 
 func (s server) Cleanup() error {
-	s.store.Close()
+	s.db.DumpToStdout()
+	s.db.Close()
 	return nil
 }
 

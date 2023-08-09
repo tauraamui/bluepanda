@@ -13,7 +13,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/matryer/is"
 	"github.com/tauraamui/kvs/v2"
-	"github.com/tauraamui/kvs/v2/storage"
 	"github.com/tauraamui/redpanda/internal/logging"
 	"github.com/tauraamui/redpanda/internal/mock"
 )
@@ -47,18 +46,16 @@ func TestHandleInserts(t *testing.T) {
 	is.Equal(string(body), "")
 }
 
-func setup() (register, storage.Store, test, func() error) {
+func setup() (register, kvs.KVDB, test, func() error) {
 	app := fiber.New()
 	db, err := kvs.NewMemKVDB()
 	if err != nil {
 		panic(err)
 	}
 
-	store := storage.New(db)
-
-	return app.Add, storage.New(db), app.Test, func() error {
+	return app.Add, db, app.Test, func() error {
 		app.Shutdown()
-		store.Close()
+		db.Close()
 		return nil
 	}
 }
