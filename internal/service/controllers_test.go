@@ -10,7 +10,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/dgraph-io/badger/v3"
 	"github.com/gofiber/fiber/v2"
 	"github.com/matryer/is"
 	"github.com/tauraamui/kvs/v2"
@@ -30,7 +29,7 @@ func TestHandleInserts(t *testing.T) {
 	is := is.New(t)
 
 	logWriter := mock.LogWriter{}
-	register("POST", "/:type/:uuid", handleInserts(logging.New(&logWriter), store, &guardedPKS{pks: map[string]*badger.Sequence{}}))
+	register("POST", "/:type/:uuid", handleInserts(logging.New(&logWriter), store, PKS{}))
 
 	resp, err := test(buildPostRequest("/fruit/root", mustMarshal(data{
 		Name: "mango",

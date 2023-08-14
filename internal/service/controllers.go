@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
-	"sync"
 
 	"github.com/dgraph-io/badger/v3"
 	"github.com/gofiber/fiber/v2"
@@ -75,14 +74,11 @@ func handleFetch(log logging.Logger, store kvs.KVDB) fiber.Handler {
 	}
 }
 
-type guardedPKS struct {
-	mu  sync.Mutex
-	pks map[string]*badger.Sequence
-}
+type PKS map[string]*badger.Sequence
 
 type rawData map[string]any
 
-func handleInserts(log logging.Logger, store kvs.KVDB, gpks *guardedPKS) fiber.Handler {
+func handleInserts(log logging.Logger, store kvs.KVDB, gpks PKS) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		ttype := c.Params("type")
 		uuidx := c.Params("uuid")
@@ -90,7 +86,7 @@ func handleInserts(log logging.Logger, store kvs.KVDB, gpks *guardedPKS) fiber.H
 		data := rawData{}
 		json.Unmarshal(c.Body(), &data)
 
-		rowID, err := nextRowID(store, resolveOwnerID(uuidx), ttype, gpks.pks)
+		rowID, err := nextRowID(store, resolveOwnerID(uuidx), ttype, gpks)
 		if err != nil {
 			return err
 		}
