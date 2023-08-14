@@ -133,6 +133,10 @@ func nameToTypeOf(name string) reflect.Type {
 		return reflect.TypeOf("")
 	case "int":
 		return reflect.TypeOf(int(0))
+	case "f32":
+		return reflect.TypeOf(float32(0))
+	case "f64":
+		return reflect.TypeOf(float64(0))
 	}
 	return nil
 }
@@ -153,6 +157,7 @@ func convertToEntries(tableName string, ownerUUID kvs.UUID, rowID uint32, data m
 		}
 
 		if includeData {
+			fmt.Printf("TYPE: %T\n", v)
 			bd, err := convertToBytes(v)
 			if err != nil {
 				return entries
