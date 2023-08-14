@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
@@ -44,6 +45,11 @@ func TestHandleInserts(t *testing.T) {
 	is.NoErr(err)
 
 	is.Equal(string(body), "")
+
+	stdout := strings.Builder{}
+	store.DumpTo(&stdout)
+
+	is.Equal(stdout.String(), "")
 }
 
 func setup() (register, kvs.KVDB, test, func() error) {

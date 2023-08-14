@@ -35,7 +35,10 @@ func handleFetch(log logging.Logger, store kvs.KVDB) fiber.Handler {
 				var destinationindex uint32 = 0
 				for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
 					item := it.Item()
-					if err := loadItemDataIntoEntry(&ent, item.Value); err != nil {
+					if err := item.Value(func(val []byte) error {
+						ent.Data = val
+						return nil
+					}); err != nil {
 						return err
 					}
 
