@@ -8,8 +8,8 @@ import (
 
 	"github.com/dgraph-io/badger/v3"
 	"github.com/gofiber/fiber/v2"
-	"github.com/tauraamui/kvs/v2"
 	"github.com/tauraamui/redpanda/internal/logging"
+	"github.com/tauraamui/redpanda/pkg/kvs"
 )
 
 type Server interface {

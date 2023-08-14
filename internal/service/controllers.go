@@ -12,8 +12,8 @@ import (
 	"github.com/dgraph-io/badger/v3"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"github.com/tauraamui/kvs/v2"
 	"github.com/tauraamui/redpanda/internal/logging"
+	"github.com/tauraamui/redpanda/pkg/kvs"
 )
 
 type typedEntry struct {

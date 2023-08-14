@@ -8,7 +8,6 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/matryer/is v1.4.1
 	github.com/rs/zerolog v1.30.0
-	github.com/tauraamui/kvs/v2 v2.2.0
 )
 
 require (
