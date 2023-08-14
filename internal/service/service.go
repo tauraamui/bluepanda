@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/dgraph-io/badger/v3"
@@ -44,7 +45,12 @@ func New(log logging.Logger) (Server, error) {
 		app: fiber.New(fiber.Config{DisableStartupMessage: true}),
 	}
 
-	svr.app.Post("/insert/:type/:uuid", handleInserts(log, db))
+	gpks := guardedPKS{
+		mu:  sync.Mutex{},
+		pks: map[string]*badger.Sequence{},
+	}
+
+	svr.app.Post("/insert/:type/:uuid", handleInserts(log, db, &gpks))
 	svr.app.Post("/fetch/:type/:uuid", handleFetch(log, db))
 
 	return svr, nil

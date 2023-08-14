@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
+	"sync"
 
 	"github.com/dgraph-io/badger/v3"
 	"github.com/gofiber/fiber/v2"
@@ -73,9 +74,14 @@ func handleFetch(log logging.Logger, store kvs.KVDB) fiber.Handler {
 	}
 }
 
+type guardedPKS struct {
+	mu  sync.Mutex
+	pks map[string]*badger.Sequence
+}
+
 type rawData map[string]any
 
-func handleInserts(log logging.Logger, store kvs.KVDB) fiber.Handler {
+func handleInserts(log logging.Logger, store kvs.KVDB, gpks *guardedPKS) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		ttype := c.Params("type")
 		uuidx := c.Params("uuid")
@@ -83,7 +89,11 @@ func handleInserts(log logging.Logger, store kvs.KVDB) fiber.Handler {
 		data := rawData{}
 		json.Unmarshal(c.Body(), &data)
 
-		entries := convertToEntries(ttype, resolveOwnerID(uuidx), uint32(0), data, true)
+		rowID, err := nextRowID(store, resolveOwnerID(uuidx), ttype, gpks.pks)
+		if err != nil {
+			return err
+		}
+		entries := convertToEntries(ttype, resolveOwnerID(uuidx), rowID, data, true)
 
 		for _, entry := range entries {
 			if err := kvs.Store(store, entry); err != nil {
@@ -291,4 +301,39 @@ func convertFromBytes(data []byte, i interface{}) error {
 	default:
 		return fmt.Errorf("unsupported type")
 	}
+}
+
+func nextRowID(db kvs.KVDB, owner kvs.UUID, tableName string, pks map[string]*badger.Sequence) (uint32, error) {
+	seq, err := resolveSequence(db, fmt.Sprintf("%s.%s", owner, tableName), pks)
+	if err != nil {
+		return 0, err
+	}
+
+	s, err := seq.Next()
+	if err != nil {
+		return 0, err
+	}
+	return uint32(s), nil
+}
+
+func nextSequence(seq *badger.Sequence) (uint32, error) {
+	s, err := seq.Next()
+	if err != nil {
+		return 0, err
+	}
+	return uint32(s), nil
+}
+
+func resolveSequence(db kvs.KVDB, sequenceKey string, pks map[string]*badger.Sequence) (*badger.Sequence, error) {
+	seq, ok := pks[sequenceKey]
+	var err error
+	if !ok {
+		seq, err = db.GetSeq([]byte(sequenceKey), 1)
+		if err != nil {
+			return nil, err
+		}
+		pks[sequenceKey] = seq
+	}
+
+	return seq, nil
 }

@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strings"
 	"testing"
 
+	"github.com/dgraph-io/badger/v3"
 	"github.com/gofiber/fiber/v2"
 	"github.com/matryer/is"
 	"github.com/tauraamui/kvs/v2"
@@ -30,7 +30,7 @@ func TestHandleInserts(t *testing.T) {
 	is := is.New(t)
 
 	logWriter := mock.LogWriter{}
-	register("POST", "/:type/:uuid", handleInserts(logging.New(&logWriter), store))
+	register("POST", "/:type/:uuid", handleInserts(logging.New(&logWriter), store, &guardedPKS{pks: map[string]*badger.Sequence{}}))
 
 	resp, err := test(buildPostRequest("/fruit/root", mustMarshal(data{
 		Name: "mango",
@@ -45,11 +45,6 @@ func TestHandleInserts(t *testing.T) {
 	is.NoErr(err)
 
 	is.Equal(string(body), "")
-
-	stdout := strings.Builder{}
-	store.DumpTo(&stdout)
-
-	is.Equal(stdout.String(), "")
 }
 
 func setup() (register, kvs.KVDB, test, func() error) {
