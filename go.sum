@@ -99,6 +99,8 @@ github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5Cc
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/tauraamui/kvs/v2 v2.1.0 h1:jHtRonYdbUSs2NWO4H4kOu5TlQfTCl/IP7RcqvTrQEw=
 github.com/tauraamui/kvs/v2 v2.1.0/go.mod h1:qC6zpgBjYZcQ9sZBvqobZ2l+c9uqlWj0tr/Z6CJubNw=
+github.com/tauraamui/kvs/v2 v2.2.0 h1:hGhJS3fnZ280wAZXlGP+iNSjVtjteKaN5808VUkJz3Y=
+github.com/tauraamui/kvs/v2 v2.2.0/go.mod h1:owGAJbuMiluuZo7mxNul6kRiS8F49Z6csp2STH94hWw=
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=

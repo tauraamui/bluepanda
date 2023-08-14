@@ -27,7 +27,7 @@ func handleFetch(log logging.Logger, store kvs.KVDB) fiber.Handler {
 		ttype := c.Params("type")
 		uuidx := c.Params("uuid")
 
-		data := map[string]string{}
+		data := []string{}
 		json.Unmarshal(c.Body(), &data)
 
 		blankEntries := convertToBlankTypesEntries(ttype, resolveOwnerID(uuidx), uint32(0), data)
@@ -35,7 +35,7 @@ func handleFetch(log logging.Logger, store kvs.KVDB) fiber.Handler {
 		dest := []rawData{}
 		for _, ent := range blankEntries {
 			// iterate over all stored values for this entry
-			prefix := ent.e.PrefixKey()
+			prefix := ent.PrefixKey()
 			if err := store.View(func(txn *badger.Txn) error {
 				it := txn.NewIterator(badger.DefaultIteratorOptions)
 				defer it.Close()
@@ -44,21 +44,22 @@ func handleFetch(log logging.Logger, store kvs.KVDB) fiber.Handler {
 				for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
 					item := it.Item()
 					if err := item.Value(func(val []byte) error {
-						ent.e.Data = val
+						ent.Data = val
 						return nil
 					}); err != nil {
 						return err
 					}
+					ent.Meta = item.UserMeta()
 
 					if len(dest) == 0 || destinationindex >= uint32(len(dest)) {
 						dest = append(dest, rawData{})
 					}
 
-					v := reflect.New(ent.t).Interface()
-					if err := convertFromBytes(ent.e.Data, v); err != nil {
+					v := reflect.New(reflect.TypeOf(createInstanceOfKind(reflect.Kind(ent.Meta)))).Interface()
+					if err := convertFromBytes(ent.Data, v); err != nil {
 						return err
 					}
-					dest[destinationindex][ent.e.ColumnName] = v
+					dest[destinationindex][ent.ColumnName] = v
 
 					destinationindex++
 				}
@@ -121,9 +122,9 @@ func loadItemDataIntoEntry(ent *kvs.Entry, fn func(func(val []byte) error) error
 	})
 }
 
-func convertToBlankTypesEntries(tableName string, ownerUUID kvs.UUID, rowID uint32, data map[string]string) []typedEntry {
-	entries := []typedEntry{}
-	for k, v := range data {
+func convertToBlankTypesEntries(tableName string, ownerUUID kvs.UUID, rowID uint32, data []string) []kvs.Entry {
+	entries := []kvs.Entry{}
+	for _, k := range data {
 		e := kvs.Entry{
 			TableName:  tableName,
 			ColumnName: strings.ToLower(k),
@@ -131,23 +132,9 @@ func convertToBlankTypesEntries(tableName string, ownerUUID kvs.UUID, rowID uint
 			RowID:      rowID,
 		}
 
-		entries = append(entries, typedEntry{t: nameToTypeOf(v), e: e})
+		entries = append(entries, e)
 	}
 	return entries
-}
-
-func nameToTypeOf(name string) reflect.Type {
-	switch name {
-	case "string":
-		return reflect.TypeOf("")
-	case "int":
-		return reflect.TypeOf(int(0))
-	case "f32":
-		return reflect.TypeOf(float32(0))
-	case "f64":
-		return reflect.TypeOf(float64(0))
-	}
-	return nil
 }
 
 func convertToBlankEntries(tableName string, ownerUUID kvs.UUID, rowID uint32, data map[string]any) []kvs.Entry {
@@ -163,6 +150,7 @@ func convertToEntries(tableName string, ownerUUID kvs.UUID, rowID uint32, data m
 			ColumnName: strings.ToLower(k),
 			OwnerUUID:  ownerUUID,
 			RowID:      rowID,
+			Meta:       byte(reflect.TypeOf(v).Kind()),
 		}
 
 		if includeData {
@@ -177,6 +165,49 @@ func convertToEntries(tableName string, ownerUUID kvs.UUID, rowID uint32, data m
 	}
 
 	return entries
+}
+
+func createInstanceOfKind(kind reflect.Kind) any {
+	switch kind {
+	case reflect.Bool:
+		return false
+	case reflect.Int:
+		return int(0)
+	case reflect.Int8:
+		return int8(0)
+	case reflect.Int16:
+		return int16(0)
+	case reflect.Int32:
+		return int32(0)
+	case reflect.Int64:
+		return int64(0)
+	case reflect.Uint:
+		return uint(0)
+	case reflect.Uint8:
+		return uint8(0)
+	case reflect.Uint16:
+		return uint16(0)
+	case reflect.Uint32:
+		return uint32(0)
+	case reflect.Uint64:
+		return uint64(0)
+	case reflect.Uintptr:
+		return uintptr(0)
+	case reflect.Float32:
+		return float32(0)
+	case reflect.Float64:
+		return float64(0)
+	case reflect.Complex64:
+		return complex64(0)
+	case reflect.Complex128:
+		return complex128(0)
+	case reflect.Interface:
+		return new(interface{})
+	case reflect.String:
+		return ""
+	default:
+		return nil
+	}
 }
 
 func convertToBytes(i interface{}) ([]byte, error) {
