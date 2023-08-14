@@ -57,7 +57,6 @@ func handleFetch(log logging.Logger, store kvs.KVDB) fiber.Handler {
 					if err := convertFromBytes(ent.e.Data, v); err != nil {
 						return err
 					}
-					fmt.Printf("V: %+v\n", v)
 					dest[destinationindex][ent.e.ColumnName] = v
 
 					destinationindex++
@@ -68,7 +67,7 @@ func handleFetch(log logging.Logger, store kvs.KVDB) fiber.Handler {
 			}
 		}
 
-		log.Info().Msg("loaded entry successfully...")
+		log.Debug().Msg("loaded entry successfully...")
 
 		return c.JSON(dest)
 	}
@@ -93,7 +92,7 @@ func handleInserts(log logging.Logger, store kvs.KVDB) fiber.Handler {
 			}
 		}
 
-		log.Info().Msg("stored entry successfully...")
+		log.Debug().Msg("stored entry successfully...")
 
 		return nil
 	}
@@ -157,7 +156,6 @@ func convertToEntries(tableName string, ownerUUID kvs.UUID, rowID uint32, data m
 		}
 
 		if includeData {
-			fmt.Printf("TYPE: %T\n", v)
 			bd, err := convertToBytes(v)
 			if err != nil {
 				return entries

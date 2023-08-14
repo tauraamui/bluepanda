@@ -6,12 +6,15 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
+	"github.com/tauraamui/redpanda/internal/logging"
 	"github.com/tauraamui/redpanda/internal/service"
 )
 
 func main() {
-	svr, err := service.New()
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	log := logging.New()
+	svr, err := service.New(log)
 	if err != nil {
 		log.Fatal().Msgf("error: %s", err)
 	}
@@ -36,7 +39,7 @@ func main() {
 	<-interrupt
 
 	log.Info().Msg("shutting down gracefully...")
-	if err := svr.Cleanup(); err != nil {
+	if err := svr.Cleanup(log); err != nil {
 		log.Fatal().Msgf("error: %s", err)
 	}
 

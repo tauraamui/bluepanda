@@ -3,6 +3,7 @@ package service
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/dgraph-io/badger/v3"
@@ -14,7 +15,7 @@ import (
 type Server interface {
 	Listen(port string) error
 	ShutdownWithTimeout(d time.Duration) error
-	Cleanup() error
+	Cleanup(log logging.Logger) error
 }
 
 type server struct {
@@ -22,7 +23,7 @@ type server struct {
 	app *fiber.App
 }
 
-func New() (Server, error) {
+func New(log logging.Logger) (Server, error) {
 	parentDir, err := os.UserConfigDir()
 	if err != nil {
 		return nil, err
@@ -43,7 +44,6 @@ func New() (Server, error) {
 		app: fiber.New(fiber.Config{DisableStartupMessage: true}),
 	}
 
-	log := logging.New()
 	svr.app.Post("/insert/:type/:uuid", handleInserts(log, db))
 	svr.app.Post("/fetch/:type/:uuid", handleFetch(log, db))
 
@@ -54,8 +54,10 @@ func (s server) Listen(port string) error {
 	return s.app.Listen(port)
 }
 
-func (s server) Cleanup() error {
-	s.db.DumpToStdout()
+func (s server) Cleanup(log logging.Logger) error {
+	dbg := strings.Builder{}
+	s.db.DumpTo(&dbg)
+	log.Debug().Msg(dbg.String())
 	s.db.Close()
 	return nil
 }
