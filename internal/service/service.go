@@ -44,7 +44,8 @@ func New() (Server, error) {
 	}
 
 	log := logging.New()
-	svr.app.Post("/:type/:uuid", handleInserts(log, db))
+	svr.app.Post("/insert/:type/:uuid", handleInserts(log, db))
+	svr.app.Post("/fetch/:type/:uuid", handleFetch(log, db))
 
 	return svr, nil
 }
