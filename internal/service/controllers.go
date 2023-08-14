@@ -54,7 +54,6 @@ func handleFetch(log logging.Logger, store kvs.KVDB) fiber.Handler {
 					}
 
 					v := reflect.New(ent.t).Interface()
-					fmt.Printf("LEN: %d\n", len(ent.e.Data))
 					if err := convertFromBytes(ent.e.Data, v); err != nil {
 						return err
 					}
@@ -231,10 +230,6 @@ func convertFromBytes(data []byte, i interface{}) error {
 		*v = string(data)
 		return nil
 	case *int:
-		if len(data) == 2 {
-			data = append(data, 0x0000)
-			data = append(data, 0x0000)
-		}
 		if len(data) < 4 {
 			return fmt.Errorf("insufficient data for int")
 		}
