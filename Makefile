@@ -1,5 +1,9 @@
 .DEFAULT_GOAL := default
 
+.PHONY: run
+run:
+	go run ./cmd/service/main.go
+
 .PHONY: test
 test:
 	gotestsum ./...
