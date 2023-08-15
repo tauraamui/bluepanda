@@ -17,6 +17,8 @@ import (
 	"github.com/tauraamui/redpanda/pkg/kvs"
 )
 
+const JSONNumber = byte(99)
+
 type typedEntry struct {
 	t reflect.Type
 	e kvs.Entry
@@ -57,7 +59,7 @@ func handleFetch(log logging.Logger, store kvs.KVDB) fiber.Handler {
 					}
 
 					var v any
-					if ent.Meta != byte(99) {
+					if ent.Meta != JSONNumber {
 						v = reflect.New(reflect.TypeOf(createInstanceOfKind(reflect.Kind(ent.Meta)))).Interface()
 						if err := convertFromBytes(ent.Data, v); err != nil {
 							return err
@@ -162,7 +164,7 @@ func convertToEntries(tableName string, ownerUUID kvs.UUID, rowID uint32, data m
 		}
 
 		if isJSONNumber {
-			e.Meta = byte(99)
+			e.Meta = JSONNumber
 		}
 
 		if includeData {
