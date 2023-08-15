@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/rs/zerolog"
-	"github.com/tauraamui/redpanda/internal/logging"
-	"github.com/tauraamui/redpanda/internal/service"
+	"github.com/tauraamui/bluepanda/internal/logging"
+	"github.com/tauraamui/bluepanda/internal/service"
 )
 
 func main() {
@@ -34,7 +34,7 @@ func main() {
 		}
 	}()
 
-	log.Info().Msg("redpanda started, waiting for interrupt...")
+	log.Info().Msg("bluepanda started, waiting for interrupt...")
 
 	<-interrupt
 

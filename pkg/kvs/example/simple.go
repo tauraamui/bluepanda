@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/tauraamui/redpanda/pkg/kvs"
-	"github.com/tauraamui/redpanda/pkg/kvs/storage"
+	"github.com/tauraamui/bluepanda/pkg/kvs"
+	"github.com/tauraamui/bluepanda/pkg/kvs/storage"
 )
 
 type Balloon struct {

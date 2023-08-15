@@ -8,8 +8,8 @@ import (
 
 	"github.com/dgraph-io/badger/v3"
 	"github.com/gofiber/fiber/v2"
-	"github.com/tauraamui/redpanda/internal/logging"
-	"github.com/tauraamui/redpanda/pkg/kvs"
+	"github.com/tauraamui/bluepanda/internal/logging"
+	"github.com/tauraamui/bluepanda/pkg/kvs"
 )
 
 type Server interface {
@@ -29,7 +29,7 @@ func New(log logging.Logger) (Server, error) {
 		return nil, err
 	}
 
-	conn, err := badger.Open(badger.DefaultOptions(filepath.Join(parentDir, "redpanda", "data")).WithLogger(nil))
+	conn, err := badger.Open(badger.DefaultOptions(filepath.Join(parentDir, "bluepanda", "data")).WithLogger(nil))
 	if err != nil {
 		return nil, err
 	}

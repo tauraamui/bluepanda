@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/tauraamui/redpanda/pkg/kvs"
-	"github.com/tauraamui/redpanda/pkg/kvs/storage"
+	"github.com/tauraamui/bluepanda/pkg/kvs"
+	"github.com/tauraamui/bluepanda/pkg/kvs/storage"
 )
 
 type SmallChild struct {

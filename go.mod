@@ -1,4 +1,4 @@
-module github.com/tauraamui/redpanda
+module github.com/tauraamui/bluepanda
 
 go 1.19
 

@@ -34,9 +34,9 @@ package query_test
 import (
 	"testing"
 
-	"github.com/tauraamui/redpanda/pkg/kvs"
-	"github.com/tauraamui/redpanda/pkg/kvs/query"
-	"github.com/tauraamui/redpanda/pkg/kvs/storage"
+	"github.com/tauraamui/bluepanda/pkg/kvs"
+	"github.com/tauraamui/bluepanda/pkg/kvs/query"
+	"github.com/tauraamui/bluepanda/pkg/kvs/storage"
 )
 
 func BenchmarkQueryWithSingleFilterWithTwoRecords(b *testing.B) {

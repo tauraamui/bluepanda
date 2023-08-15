@@ -13,8 +13,8 @@ import (
 	"github.com/dgraph-io/badger/v3"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"github.com/tauraamui/redpanda/internal/logging"
-	"github.com/tauraamui/redpanda/pkg/kvs"
+	"github.com/tauraamui/bluepanda/internal/logging"
+	"github.com/tauraamui/bluepanda/pkg/kvs"
 )
 
 const JSONNumber = byte(99)

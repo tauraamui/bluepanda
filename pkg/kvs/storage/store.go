@@ -37,7 +37,7 @@ import (
 	"strings"
 
 	"github.com/dgraph-io/badger/v3"
-	"github.com/tauraamui/redpanda/pkg/kvs"
+	"github.com/tauraamui/bluepanda/pkg/kvs"
 )
 
 type Value interface {

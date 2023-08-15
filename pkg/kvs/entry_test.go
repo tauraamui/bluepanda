@@ -37,7 +37,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/matryer/is"
-	"github.com/tauraamui/redpanda/pkg/kvs"
+	"github.com/tauraamui/bluepanda/pkg/kvs"
 )
 
 func TestEntryStoreValuesInTable(t *testing.T) {

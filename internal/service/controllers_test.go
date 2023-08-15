@@ -15,9 +15,9 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/matryer/is"
-	"github.com/tauraamui/redpanda/internal/logging"
-	"github.com/tauraamui/redpanda/internal/mock"
-	"github.com/tauraamui/redpanda/pkg/kvs"
+	"github.com/tauraamui/bluepanda/internal/logging"
+	"github.com/tauraamui/bluepanda/internal/mock"
+	"github.com/tauraamui/bluepanda/pkg/kvs"
 )
 
 type data struct {
