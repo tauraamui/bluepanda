@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
@@ -27,6 +28,7 @@ func handleFetch(log logging.Logger, store kvs.KVDB) fiber.Handler {
 		uuidx := c.Params("uuid")
 
 		data := []string{}
+		log.Debug().Msgf("%s", c.Body())
 		json.Unmarshal(c.Body(), &data)
 
 		blankEntries := convertToBlankTypesEntries(ttype, resolveOwnerID(uuidx), uint32(0), data)
@@ -54,9 +56,14 @@ func handleFetch(log logging.Logger, store kvs.KVDB) fiber.Handler {
 						dest = append(dest, rawData{})
 					}
 
-					v := reflect.New(reflect.TypeOf(createInstanceOfKind(reflect.Kind(ent.Meta)))).Interface()
-					if err := convertFromBytes(ent.Data, v); err != nil {
-						return err
+					var v any
+					if ent.Meta != byte(99) {
+						v = reflect.New(reflect.TypeOf(createInstanceOfKind(reflect.Kind(ent.Meta)))).Interface()
+						if err := convertFromBytes(ent.Data, v); err != nil {
+							return err
+						}
+					} else {
+						v = json.Number(string(ent.Data))
 					}
 					dest[destinationindex][ent.ColumnName] = v
 
@@ -84,7 +91,11 @@ func handleInserts(log logging.Logger, store kvs.KVDB, gpks PKS) fiber.Handler {
 		uuidx := c.Params("uuid")
 
 		data := rawData{}
-		json.Unmarshal(c.Body(), &data)
+		decoder := json.NewDecoder(bytes.NewReader(c.Body()))
+		decoder.UseNumber()
+		if err := decoder.Decode(&data); err != nil {
+			return err
+		}
 
 		rowID, err := nextRowID(store, resolveOwnerID(uuidx), ttype, gpks)
 		if err != nil {
@@ -141,6 +152,7 @@ func convertToEntries(tableName string, ownerUUID kvs.UUID, rowID uint32, data m
 	entries := []kvs.Entry{}
 
 	for k, v := range data {
+		jsonNum, isJSONNumber := v.(json.Number)
 		e := kvs.Entry{
 			TableName:  tableName,
 			ColumnName: strings.ToLower(k),
@@ -149,12 +161,21 @@ func convertToEntries(tableName string, ownerUUID kvs.UUID, rowID uint32, data m
 			Meta:       byte(reflect.TypeOf(v).Kind()),
 		}
 
+		if isJSONNumber {
+			e.Meta = byte(99)
+		}
+
 		if includeData {
-			bd, err := convertToBytes(v)
-			if err != nil {
-				return entries
+			if !isJSONNumber {
+
+				bd, err := convertToBytes(v)
+				if err != nil {
+					return entries
+				}
+				e.Data = bd
+			} else {
+				e.Data = []byte(jsonNum.String())
 			}
-			e.Data = bd
 		}
 
 		entries = append(entries, e)
@@ -252,6 +273,8 @@ func convertToBytes(i interface{}) ([]byte, error) {
 		} else {
 			return []byte{0}, nil
 		}
+	case json.Number:
+		return []byte(v), nil
 	default:
 		return nil, fmt.Errorf("unsupported type")
 	}
