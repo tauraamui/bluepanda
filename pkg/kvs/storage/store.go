@@ -37,7 +37,10 @@ import (
 	"strings"
 
 	"github.com/dgraph-io/badger/v3"
+	pb "github.com/tauraamui/bluepanda/pkg/api"
 	"github.com/tauraamui/bluepanda/pkg/kvs"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type Value interface {
@@ -45,15 +48,28 @@ type Value interface {
 }
 
 type Store struct {
-	db  kvs.KVDB
-	pks map[string]*badger.Sequence
+	db   kvs.KVDB
+	bpdb pb.BluePandaClient
+	pks  map[string]*badger.Sequence
 }
 
 func New(db kvs.KVDB) Store {
 	return Store{db: db, pks: map[string]*badger.Sequence{}}
 }
 
+func Connect(addr string) (*Store, error) {
+	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, err
+	}
+
+	return &Store{bpdb: pb.NewBluePandaClient(conn)}, nil
+}
+
 func (s Store) Save(owner kvs.UUID, value Value) error {
+	if s.bpdb != nil {
+		// call next row ID, and then invoke rpc "store" here
+	}
 	rowID, err := nextRowID(s.db, owner, value.TableName(), s.pks)
 	if err != nil {
 		return err
