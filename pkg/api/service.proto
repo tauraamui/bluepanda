@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+option go_package = "github.com/tauraamui/bluepanda/pkg/api";
+option java_multiple_files = true;
+option java_package = "io.grpc.bluepanda.api";
+option java_outer_classname = "BluePandaProto";
+
+import "google/protobuf/any.proto";
+
+package bluepanda;
+
+service BluePanda {
+  rpc Fetch (FetchRequest) returns (stream FetchResult) {}
+}
+
+message FetchRequest {
+  string type = 1;
+  string uuid = 2;
+  repeated string columns = 3;
+}
+
+message FetchResult {
+  bytes json = 1;
+}
+
+message Data {
+  string column = 1;
+  uint32 type = 2;
+  google.protobuf.Any value = 3;
+}

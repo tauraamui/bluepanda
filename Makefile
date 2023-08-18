@@ -2,7 +2,7 @@
 
 .PHONY: run
 run:
-	go run ./cmd/service/main.go
+	go run ./bluepanda/main.go
 
 .PHONY: test
 test:

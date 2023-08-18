@@ -29,54 +29,75 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-package main
+package service
 
 import (
 	"os"
-	"os/signal"
-	"syscall"
+	"path/filepath"
+	"strings"
 	"time"
 
-	"github.com/rs/zerolog"
+	"github.com/dgraph-io/badger/v3"
+	"github.com/gofiber/fiber/v2"
 	"github.com/tauraamui/bluepanda/internal/logging"
-	"github.com/tauraamui/bluepanda/internal/service"
+	"github.com/tauraamui/bluepanda/pkg/kvs"
 )
 
-func main() {
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	log := logging.New()
-	svr, err := service.New(log)
+type Server interface {
+	Listen(port string) error
+	Shutdown() error
+	ShutdownWithTimeout(d time.Duration) error
+	Cleanup(log logging.Logger) error
+}
+
+type server struct {
+	db  kvs.KVDB
+	app *fiber.App
+}
+
+func NewHTTP(log logging.Logger) (Server, error) {
+	parentDir, err := os.UserConfigDir()
 	if err != nil {
-		log.Fatal().Msgf("error: %s", err)
+		return nil, err
 	}
 
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "3000"
-		log.Info().Msgf("defaulting to port %s", port)
+	conn, err := badger.Open(badger.DefaultOptions(filepath.Join(parentDir, "bluepanda", "data")).WithLogger(nil))
+	if err != nil {
+		return nil, err
 	}
 
-	go func() {
-		if err := svr.Listen(":" + port); err != nil {
-			log.Fatal().Msgf("error: %s", err)
-		}
-	}()
-
-	log.Info().Msg("bluepanda started, waiting for interrupt...")
-
-	<-interrupt
-
-	log.Info().Msg("shutting down gracefully...")
-	if err := svr.Cleanup(log); err != nil {
-		log.Fatal().Msgf("error: %s", err)
+	db, err := kvs.NewKVDB(conn)
+	if err != nil {
+		return nil, err
 	}
 
-	if err := svr.ShutdownWithTimeout(60 * time.Second); err != nil {
-		log.Fatal().Msgf("error: %s", err)
+	svr := server{
+		db:  db,
+		app: fiber.New(fiber.Config{DisableStartupMessage: true}),
 	}
 
-	log.Info().Msg("shut down... done")
+	svr.app.Post("/insert/:type/:uuid", handleInserts(log, db, PKS{}))
+	svr.app.Post("/fetch/:type/:uuid", handleFetch(log, db))
+
+	return svr, nil
+}
+
+func (s server) Listen(port string) error {
+	return s.app.Listen(port)
+}
+
+func (s server) Cleanup(log logging.Logger) error {
+	dbg := strings.Builder{}
+	s.db.DumpTo(&dbg)
+	log.Debug().Msg(dbg.String())
+	s.db.Close()
+	return nil
+}
+
+func (s server) Shutdown() error {
+	return s.app.Shutdown()
+}
+
+func (s server) ShutdownWithTimeout(d time.Duration) error {
+	return s.app.ShutdownWithTimeout(d)
 }
