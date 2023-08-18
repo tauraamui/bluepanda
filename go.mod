@@ -3,8 +3,10 @@ module github.com/tauraamui/bluepanda
 go 1.19
 
 require (
+	github.com/alexflint/go-arg v1.4.3
 	github.com/dgraph-io/badger/v3 v3.2103.5
 	github.com/gofiber/fiber/v2 v2.48.0
+	github.com/golang/protobuf v1.5.3
 	github.com/google/uuid v1.3.0
 	github.com/matryer/is v1.4.1
 	github.com/rs/zerolog v1.30.0
@@ -14,6 +16,7 @@ require (
 )
 
 require (
+	github.com/alexflint/go-scalar v1.1.0 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -22,7 +25,6 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.1.0 // indirect
 	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6 // indirect
-	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.3 // indirect
 	github.com/google/flatbuffers v1.12.1 // indirect
 	github.com/klauspost/compress v1.16.3 // indirect

@@ -35,7 +35,7 @@ func NewRPC(log logging.Logger) (pb.BluePandaServer, error) {
 		return nil, err
 	}
 
-	return nil, nil
+	return &rpcserver{store: db}, nil
 }
 
 func (s *rpcserver) Fetch(req *pb.FetchRequest, stream pb.BluePanda_FetchServer) error {

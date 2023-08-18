@@ -32,20 +32,49 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
+	"github.com/alexflint/go-arg"
 	"github.com/rs/zerolog"
 	"github.com/tauraamui/bluepanda/internal/logging"
 	"github.com/tauraamui/bluepanda/internal/service"
 )
 
+type args struct {
+	Proto    string `arg:"--proto" default:"grpc"`
+	LogLevel string `arg:"--loglevel" default:"info"`
+}
+
+func (args) Version() string {
+	return "bluepanda v0.0.0"
+}
+
 func main() {
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	var args args
+	p := arg.MustParse(&args)
+
+	logLevel, err := zerolog.ParseLevel(args.LogLevel)
+	if err != nil {
+		p.Fail(fmt.Sprintf("unrecognised log level %s", args.LogLevel))
+	}
+
+	zerolog.SetGlobalLevel(logLevel)
 	log := logging.New()
-	svr, err := service.New(log)
+
+	proto := strings.ToLower(args.Proto)
+	if proto != "http" {
+		if proto == "grpc" {
+			p.Fail("gRPC server not yet implemented")
+		}
+		p.Fail(fmt.Sprintf("unrecognised protocol: %s", proto))
+	}
+
+	svr, err := service.NewHTTP(log)
 	if err != nil {
 		log.Fatal().Msgf("error: %s", err)
 	}
