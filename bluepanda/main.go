@@ -46,68 +46,37 @@ import (
 	"github.com/tauraamui/bluepanda/internal/service"
 )
 
-type HttpOptions struct {
-	args
-	Port int `arg:"--port" default:"3000"`
-}
-
-type GRPCOptions struct {
-	args
-	Port int `arg:"--port" default:"3000"`
-}
-
 type args struct {
 	Proto    string `arg:"--proto" default:"grpc"`
 	LogLevel string `arg:"--loglevel" default:"info"`
+	Port     int    `arg:"--port" default:"3000"`
 }
 
 func (args) Version() string {
 	return "bluepanda v0.0.0"
 }
 
-func runHTTP(log logging.Logger, opts HttpOptions) {
+func runHTTP(log logging.Logger, opts args) {
 	log.Info().Msgf("%s starting HTTP service", opts.Version())
 	svr, err := service.NewHTTP(log)
 	if err != nil {
 		log.Fatal().Msgf("error: %s", err)
 	}
 
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
-
-	port := strconv.Itoa(opts.Port)
-	addr := fmt.Sprintf(":%s", port)
-	log.Info().Msgf("listening @ %s", addr)
-
-	go func() {
-		if err := svr.Listen(addr); err != nil {
-			log.Fatal().Msgf("error: %s", err)
-		}
-	}()
-
-	log.Info().Msg("bluepanda started, waiting for interrupt...")
-
-	<-interrupt
-
-	log.Info().Msg("shutting down gracefully...")
-	if err := svr.Cleanup(log); err != nil {
-		log.Fatal().Msgf("error: %s", err)
-	}
-
-	if err := svr.ShutdownWithTimeout(60 * time.Second); err != nil {
-		log.Fatal().Msgf("error: %s", err)
-	}
-
-	log.Info().Msg("shut down... done")
+	run(log, svr, opts)
 }
 
-func runGRPC(log logging.Logger, opts GRPCOptions) {
+func runGRPC(log logging.Logger, opts args) {
 	log.Info().Msgf("%s starting GRPC service", opts.Version())
 	svr, err := service.NewRPC(log)
 	if err != nil {
 		log.Fatal().Msgf("error: %s", err)
 	}
 
+	run(log, svr, opts)
+}
+
+func run(log logging.Logger, svr service.Server, opts args) {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 
@@ -152,13 +121,9 @@ func main() {
 	proto := strings.ToLower(args.Proto)
 	switch proto {
 	case "http":
-		opts := HttpOptions{}
-		arg.MustParse(&opts)
-		runHTTP(log, opts)
+		runHTTP(log, args)
 	case "grpc":
-		opts := GRPCOptions{}
-		arg.MustParse(&opts)
-		runGRPC(log, opts)
+		runGRPC(log, args)
 	default:
 		p.Fail(fmt.Sprintf("unrecognised protocol: %s", proto))
 	}
