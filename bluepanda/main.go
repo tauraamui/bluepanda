@@ -56,7 +56,9 @@ func (args) Version() string {
 	return "bluepanda v0.0.0"
 }
 
-func run(log logging.Logger, newServer func(logging.Logger) (service.Server, error), opts args) {
+type newServerFunc func(logging.Logger) (service.Server, error)
+
+func run(log logging.Logger, newServer newServerFunc, opts args) {
 	svr, err := newServer(log)
 	if err != nil {
 		log.Fatal().Msgf("error: %s", err)
