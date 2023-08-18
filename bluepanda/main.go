@@ -35,6 +35,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -45,6 +46,16 @@ import (
 	"github.com/tauraamui/bluepanda/internal/service"
 )
 
+type HttpOptions struct {
+	args
+	Port int `arg:"--port" default:"3000"`
+}
+
+type GRPCOptions struct {
+	args
+	Port int `arg:"--port" default:"3000"`
+}
+
 type args struct {
 	Proto    string `arg:"--proto" default:"grpc"`
 	LogLevel string `arg:"--loglevel" default:"info"`
@@ -54,26 +65,8 @@ func (args) Version() string {
 	return "bluepanda v0.0.0"
 }
 
-func main() {
-	var args args
-	p := arg.MustParse(&args)
-
-	logLevel, err := zerolog.ParseLevel(args.LogLevel)
-	if err != nil {
-		p.Fail(fmt.Sprintf("unrecognised log level %s", args.LogLevel))
-	}
-
-	zerolog.SetGlobalLevel(logLevel)
-	log := logging.New()
-
-	proto := strings.ToLower(args.Proto)
-	if proto != "http" {
-		if proto == "grpc" {
-			p.Fail("gRPC server not yet implemented")
-		}
-		p.Fail(fmt.Sprintf("unrecognised protocol: %s", proto))
-	}
-
+func runHTTP(log logging.Logger, p *arg.Parser, opts HttpOptions) {
+	log.Info().Msgf("%s starting HTTP service", opts.Version())
 	svr, err := service.NewHTTP(log)
 	if err != nil {
 		log.Fatal().Msgf("error: %s", err)
@@ -82,14 +75,12 @@ func main() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "3000"
-		log.Info().Msgf("defaulting to port %s", port)
-	}
+	port := strconv.Itoa(opts.Port)
+	addr := fmt.Sprintf(":%s", port)
+	log.Info().Msgf("listening @ %s", addr)
 
 	go func() {
-		if err := svr.Listen(":" + port); err != nil {
+		if err := svr.Listen(addr); err != nil {
 			log.Fatal().Msgf("error: %s", err)
 		}
 	}()
@@ -108,4 +99,29 @@ func main() {
 	}
 
 	log.Info().Msg("shut down... done")
+}
+
+func main() {
+	var args args
+	p := arg.MustParse(&args)
+
+	logLevel, err := zerolog.ParseLevel(args.LogLevel)
+	if err != nil {
+		p.Fail(fmt.Sprintf("unrecognised log level %s", args.LogLevel))
+	}
+
+	zerolog.SetGlobalLevel(logLevel)
+	log := logging.New()
+
+	proto := strings.ToLower(args.Proto)
+	switch proto {
+	case "http":
+		opts := HttpOptions{}
+		hp := arg.MustParse(&opts)
+		runHTTP(log, hp, opts)
+	case "grpc":
+		p.Fail("gRPC server not yet implemented")
+	default:
+		p.Fail(fmt.Sprintf("unrecognised protocol: %s", proto))
+	}
 }
