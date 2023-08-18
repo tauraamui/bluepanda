@@ -3,7 +3,6 @@ package client
 import (
 	context "context"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -15,12 +14,9 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-var addr = flag.String("addr", "localhost:50051", "the address to connect to")
-
-func clientstub() {
-	flag.Parse()
+func Run() {
 	// Set up a connection to the server.
-	conn, err := grpc.Dial(*addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(":3000", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}

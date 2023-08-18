@@ -44,6 +44,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/tauraamui/bluepanda/internal/logging"
 	"github.com/tauraamui/bluepanda/internal/service"
+	"github.com/tauraamui/bluepanda/pkg/client"
 )
 
 type args struct {
@@ -79,6 +80,11 @@ func run(log logging.Logger, newServer newServerFunc, opts args) {
 	}()
 
 	log.Info().Msg("bluepanda started, waiting for interrupt...")
+
+	go func() {
+		time.Sleep(3 * time.Second)
+		client.Run()
+	}()
 
 	<-interrupt
 
