@@ -44,6 +44,7 @@ import (
 )
 
 type Server interface {
+	Type() string
 	Listen(port string) error
 	Shutdown() error
 	ShutdownWithTimeout(d time.Duration) error
@@ -80,6 +81,10 @@ func NewHTTP(log logging.Logger) (Server, error) {
 	svr.app.Post("/fetch/:type/:uuid", handleFetch(log, db))
 
 	return svr, nil
+}
+
+func (s server) Type() string {
+	return "HTTP"
 }
 
 func (s server) Listen(port string) error {

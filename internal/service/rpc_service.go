@@ -42,6 +42,10 @@ func NewRPC(log logging.Logger) (Server, error) {
 	return &rpcserver{db: db}, nil
 }
 
+func (s *rpcserver) Type() string {
+	return "gRPC"
+}
+
 func (s *rpcserver) Listen(addr string) error {
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {

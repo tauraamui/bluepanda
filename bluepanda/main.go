@@ -56,27 +56,13 @@ func (args) Version() string {
 	return "bluepanda v0.0.0"
 }
 
-func runHTTP(log logging.Logger, opts args) {
-	log.Info().Msgf("%s starting HTTP service", opts.Version())
-	svr, err := service.NewHTTP(log)
+func run(log logging.Logger, newServer func(logging.Logger) (service.Server, error), opts args) {
+	svr, err := newServer(log)
 	if err != nil {
 		log.Fatal().Msgf("error: %s", err)
 	}
+	log.Info().Msgf("%s starting %s service", opts.Version(), svr.Type())
 
-	run(log, svr, opts)
-}
-
-func runGRPC(log logging.Logger, opts args) {
-	log.Info().Msgf("%s starting GRPC service", opts.Version())
-	svr, err := service.NewRPC(log)
-	if err != nil {
-		log.Fatal().Msgf("error: %s", err)
-	}
-
-	run(log, svr, opts)
-}
-
-func run(log logging.Logger, svr service.Server, opts args) {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 
@@ -121,9 +107,9 @@ func main() {
 	proto := strings.ToLower(args.Proto)
 	switch proto {
 	case "http":
-		runHTTP(log, args)
+		run(log, service.NewHTTP, args)
 	case "grpc":
-		runGRPC(log, args)
+		run(log, service.NewRPC, args)
 	default:
 		p.Fail(fmt.Sprintf("unrecognised protocol: %s", proto))
 	}
