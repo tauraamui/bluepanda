@@ -1,7 +1,10 @@
 package service
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -10,6 +13,7 @@ import (
 	"time"
 
 	"github.com/dgraph-io/badger/v3"
+	"github.com/rs/zerolog/log"
 	"github.com/tauraamui/bluepanda/internal/logging"
 	"github.com/tauraamui/bluepanda/pkg/api"
 	pb "github.com/tauraamui/bluepanda/pkg/api"
@@ -21,6 +25,7 @@ type rpcserver struct {
 	pb.UnimplementedBluePandaServer
 	rpcserver *grpc.Server
 	db        kvs.KVDB
+	gpks      PKS
 }
 
 func NewRPC(log logging.Logger) (Server, error) {
@@ -39,7 +44,7 @@ func NewRPC(log logging.Logger) (Server, error) {
 		return nil, err
 	}
 
-	return &rpcserver{db: db}, nil
+	return &rpcserver{db: db, gpks: PKS{}}, nil
 }
 
 func (s *rpcserver) Type() string {
@@ -137,7 +142,31 @@ func (s *rpcserver) Fetch(req *pb.FetchRequest, stream pb.BluePanda_FetchServer)
 	return nil
 }
 
-func stub() {
-	s := grpc.NewServer()
-	pb.RegisterBluePandaServer(s, &rpcserver{})
+func (s *rpcserver) Insert(ctx context.Context, req *pb.InsertRequest) (*pb.InsertResult, error) {
+	ttype := req.GetType()
+	uuidx := req.GetUuid()
+
+	data := rawData{}
+	decoder := json.NewDecoder(bytes.NewReader(req.GetJson()))
+	decoder.UseNumber()
+
+	if err := decoder.Decode(&data); err != nil {
+		return nil, err
+	}
+
+	rowID, err := nextRowID(s.db, resolveOwnerID(uuidx), ttype, s.gpks)
+	if err != nil {
+		return nil, err
+	}
+	entries := convertToEntries(ttype, resolveOwnerID(uuidx), rowID, data, true)
+
+	for _, entry := range entries {
+		if err := kvs.Store(s.db, entry); err != nil {
+			return nil, fmt.Errorf("failed to store entry: %v", err)
+		}
+	}
+
+	log.Debug().Msg("stored entry successfully...")
+
+	return &pb.InsertResult{Status: "successful"}, nil
 }

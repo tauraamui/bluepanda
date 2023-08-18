@@ -14,6 +14,10 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+type fruit struct {
+	Name string
+}
+
 func Run() {
 	// Set up a connection to the server.
 	conn, err := grpc.Dial(":3000", grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -27,7 +31,19 @@ func Run() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
+	newFruit := fruit{Name: "dragonfruit"}
+	body, err := json.Marshal(newFruit)
+	if err != nil {
+		log.Fatalf("unable to encode fruit to send: %v", err)
+	}
 	rootUUID := (kvs.RootOwner{}).String()
+	insertResult, err := c.Insert(ctx, &pb.InsertRequest{Type: "fruit", Uuid: rootUUID, Json: body})
+	if err != nil {
+		log.Fatalf("failed to insert entry: %v", err)
+	}
+
+	fmt.Printf("insert result: %s\n", insertResult.Status)
+
 	r, err := c.Fetch(ctx, &pb.FetchRequest{Type: "fruit", Uuid: rootUUID, Columns: []string{"name"}})
 	if err != nil {
 		log.Fatalf("could not fetch: %v", err)
