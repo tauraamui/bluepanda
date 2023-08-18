@@ -2,9 +2,12 @@ package service
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"reflect"
 
 	"github.com/dgraph-io/badger/v3"
+	"github.com/tauraamui/bluepanda/internal/logging"
 	"github.com/tauraamui/bluepanda/pkg/api"
 	pb "github.com/tauraamui/bluepanda/pkg/api"
 	"github.com/tauraamui/bluepanda/pkg/kvs"
@@ -14,6 +17,25 @@ import (
 type rpcserver struct {
 	pb.UnimplementedBluePandaServer
 	store kvs.KVDB
+}
+
+func NewRPC(log logging.Logger) (pb.BluePandaServer, error) {
+	parentDir, err := os.UserConfigDir()
+	if err != nil {
+		return nil, err
+	}
+
+	conn, err := badger.Open(badger.DefaultOptions(filepath.Join(parentDir, "bluepanda", "data")).WithLogger(nil))
+	if err != nil {
+		return nil, err
+	}
+
+	db, err := kvs.NewKVDB(conn)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
 }
 
 func (s *rpcserver) Fetch(req *pb.FetchRequest, stream pb.BluePanda_FetchServer) error {

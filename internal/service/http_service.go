@@ -54,7 +54,7 @@ type server struct {
 	app *fiber.App
 }
 
-func New(log logging.Logger) (Server, error) {
+func NewHTTP(log logging.Logger) (Server, error) {
 	parentDir, err := os.UserConfigDir()
 	if err != nil {
 		return nil, err
