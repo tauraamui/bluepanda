@@ -2,9 +2,12 @@ package service
 
 import (
 	"encoding/json"
+	"net"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
+	"time"
 
 	"github.com/dgraph-io/badger/v3"
 	"github.com/tauraamui/bluepanda/internal/logging"
@@ -16,10 +19,11 @@ import (
 
 type rpcserver struct {
 	pb.UnimplementedBluePandaServer
-	store kvs.KVDB
+	rpcserver *grpc.Server
+	db        kvs.KVDB
 }
 
-func NewRPC(log logging.Logger) (pb.BluePandaServer, error) {
+func NewRPC(log logging.Logger) (Server, error) {
 	parentDir, err := os.UserConfigDir()
 	if err != nil {
 		return nil, err
@@ -35,7 +39,34 @@ func NewRPC(log logging.Logger) (pb.BluePandaServer, error) {
 		return nil, err
 	}
 
-	return &rpcserver{store: db}, nil
+	return &rpcserver{db: db}, nil
+}
+
+func (s *rpcserver) Listen(addr string) error {
+	lis, err := net.Listen("tcp", addr)
+	if err != nil {
+		return err
+	}
+	s.rpcserver = grpc.NewServer()
+	pb.RegisterBluePandaServer(s.rpcserver, s)
+	return s.rpcserver.Serve(lis)
+}
+
+func (s *rpcserver) Cleanup(log logging.Logger) error {
+	dbg := strings.Builder{}
+	s.db.DumpTo(&dbg)
+	log.Debug().Msg(dbg.String())
+	return s.db.Close()
+}
+
+func (s *rpcserver) Shutdown() error {
+	s.rpcserver.GracefulStop()
+	return nil
+}
+
+func (s *rpcserver) ShutdownWithTimeout(d time.Duration) error {
+	s.rpcserver.GracefulStop()
+	return nil
 }
 
 func (s *rpcserver) Fetch(req *pb.FetchRequest, stream pb.BluePanda_FetchServer) error {
@@ -50,7 +81,7 @@ func (s *rpcserver) Fetch(req *pb.FetchRequest, stream pb.BluePanda_FetchServer)
 	for _, ent := range blankEntries {
 		// iterate over all stored values for this entry
 		prefix := ent.PrefixKey()
-		if err := s.store.View(func(txn *badger.Txn) error {
+		if err := s.db.View(func(txn *badger.Txn) error {
 			it := txn.NewIterator(badger.DefaultIteratorOptions)
 			defer it.Close()
 

@@ -45,6 +45,7 @@ import (
 
 type Server interface {
 	Listen(port string) error
+	Shutdown() error
 	ShutdownWithTimeout(d time.Duration) error
 	Cleanup(log logging.Logger) error
 }

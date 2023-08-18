@@ -65,9 +65,45 @@ func (args) Version() string {
 	return "bluepanda v0.0.0"
 }
 
-func runHTTP(log logging.Logger, p *arg.Parser, opts HttpOptions) {
+func runHTTP(log logging.Logger, opts HttpOptions) {
 	log.Info().Msgf("%s starting HTTP service", opts.Version())
 	svr, err := service.NewHTTP(log)
+	if err != nil {
+		log.Fatal().Msgf("error: %s", err)
+	}
+
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
+
+	port := strconv.Itoa(opts.Port)
+	addr := fmt.Sprintf(":%s", port)
+	log.Info().Msgf("listening @ %s", addr)
+
+	go func() {
+		if err := svr.Listen(addr); err != nil {
+			log.Fatal().Msgf("error: %s", err)
+		}
+	}()
+
+	log.Info().Msg("bluepanda started, waiting for interrupt...")
+
+	<-interrupt
+
+	log.Info().Msg("shutting down gracefully...")
+	if err := svr.Cleanup(log); err != nil {
+		log.Fatal().Msgf("error: %s", err)
+	}
+
+	if err := svr.ShutdownWithTimeout(60 * time.Second); err != nil {
+		log.Fatal().Msgf("error: %s", err)
+	}
+
+	log.Info().Msg("shut down... done")
+}
+
+func runGRPC(log logging.Logger, opts GRPCOptions) {
+	log.Info().Msgf("%s starting GRPC service", opts.Version())
+	svr, err := service.NewRPC(log)
 	if err != nil {
 		log.Fatal().Msgf("error: %s", err)
 	}
@@ -117,10 +153,12 @@ func main() {
 	switch proto {
 	case "http":
 		opts := HttpOptions{}
-		hp := arg.MustParse(&opts)
-		runHTTP(log, hp, opts)
+		arg.MustParse(&opts)
+		runHTTP(log, opts)
 	case "grpc":
-		p.Fail("gRPC server not yet implemented")
+		opts := GRPCOptions{}
+		arg.MustParse(&opts)
+		runGRPC(log, opts)
 	default:
 		p.Fail(fmt.Sprintf("unrecognised protocol: %s", proto))
 	}
