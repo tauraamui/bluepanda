@@ -19,14 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	BluePanda_Fetch_FullMethodName  = "/bluepanda.BluePanda/Fetch"
-	BluePanda_Insert_FullMethodName = "/bluepanda.BluePanda/Insert"
+	BluePanda_NextRowID_FullMethodName = "/bluepanda.BluePanda/NextRowID"
+	BluePanda_Fetch_FullMethodName     = "/bluepanda.BluePanda/Fetch"
+	BluePanda_Insert_FullMethodName    = "/bluepanda.BluePanda/Insert"
 )
 
 // BluePandaClient is the client API for BluePanda service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type BluePandaClient interface {
+	NextRowID(ctx context.Context, in *NextRowIDRequest, opts ...grpc.CallOption) (*NextRowIDResponse, error)
 	Fetch(ctx context.Context, in *FetchRequest, opts ...grpc.CallOption) (BluePanda_FetchClient, error)
 	Insert(ctx context.Context, in *InsertRequest, opts ...grpc.CallOption) (*InsertResult, error)
 }
@@ -37,6 +39,15 @@ type bluePandaClient struct {
 
 func NewBluePandaClient(cc grpc.ClientConnInterface) BluePandaClient {
 	return &bluePandaClient{cc}
+}
+
+func (c *bluePandaClient) NextRowID(ctx context.Context, in *NextRowIDRequest, opts ...grpc.CallOption) (*NextRowIDResponse, error) {
+	out := new(NextRowIDResponse)
+	err := c.cc.Invoke(ctx, BluePanda_NextRowID_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *bluePandaClient) Fetch(ctx context.Context, in *FetchRequest, opts ...grpc.CallOption) (BluePanda_FetchClient, error) {
@@ -84,6 +95,7 @@ func (c *bluePandaClient) Insert(ctx context.Context, in *InsertRequest, opts ..
 // All implementations must embed UnimplementedBluePandaServer
 // for forward compatibility
 type BluePandaServer interface {
+	NextRowID(context.Context, *NextRowIDRequest) (*NextRowIDResponse, error)
 	Fetch(*FetchRequest, BluePanda_FetchServer) error
 	Insert(context.Context, *InsertRequest) (*InsertResult, error)
 	mustEmbedUnimplementedBluePandaServer()
@@ -93,6 +105,9 @@ type BluePandaServer interface {
 type UnimplementedBluePandaServer struct {
 }
 
+func (UnimplementedBluePandaServer) NextRowID(context.Context, *NextRowIDRequest) (*NextRowIDResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method NextRowID not implemented")
+}
 func (UnimplementedBluePandaServer) Fetch(*FetchRequest, BluePanda_FetchServer) error {
 	return status.Errorf(codes.Unimplemented, "method Fetch not implemented")
 }
@@ -110,6 +125,24 @@ type UnsafeBluePandaServer interface {
 
 func RegisterBluePandaServer(s grpc.ServiceRegistrar, srv BluePandaServer) {
 	s.RegisterService(&BluePanda_ServiceDesc, srv)
+}
+
+func _BluePanda_NextRowID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NextRowIDRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BluePandaServer).NextRowID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BluePanda_NextRowID_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BluePandaServer).NextRowID(ctx, req.(*NextRowIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _BluePanda_Fetch_Handler(srv interface{}, stream grpc.ServerStream) error {
@@ -158,6 +191,10 @@ var BluePanda_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "bluepanda.BluePanda",
 	HandlerType: (*BluePandaServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "NextRowID",
+			Handler:    _BluePanda_NextRowID_Handler,
+		},
 		{
 			MethodName: "Insert",
 			Handler:    _BluePanda_Insert_Handler,

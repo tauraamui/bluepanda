@@ -32,6 +32,7 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -68,7 +69,12 @@ func Connect(addr string) (*Store, error) {
 
 func (s Store) Save(owner kvs.UUID, value Value) error {
 	if s.bpdb != nil {
-		// call next row ID, and then invoke rpc "store" here
+		ridResp, err := s.bpdb.NextRowID(context.Background(), &pb.NextRowIDRequest{Uuid: owner.String(), Type: value.TableName()})
+		if err != nil {
+			return err
+		}
+		ridResp.GetId()
+		// call "save value" but have it invoke an RPC store method
 	}
 	rowID, err := nextRowID(s.db, owner, value.TableName(), s.pks)
 	if err != nil {

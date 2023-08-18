@@ -8,7 +8,7 @@ option java_outer_classname = "BluePandaProto";
 package bluepanda;
 
 service BluePanda {
-  rpc NextRowID (NextRowIDRequest) returns (NextRowIDResponse)
+  rpc NextRowID (NextRowIDRequest) returns (NextRowIDResponse) {}
   rpc Fetch (FetchRequest) returns (stream FetchResult) {}
   rpc Insert (InsertRequest) returns (InsertResult) {}
 }
@@ -19,7 +19,7 @@ message NextRowIDRequest {
 }
 
 message NextRowIDResponse {
-  int id = 1;
+  uint32 id = 1;
 }
 
 message FetchRequest {
