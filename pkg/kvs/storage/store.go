@@ -83,6 +83,24 @@ func (s Store) Save(owner kvs.UUID, value Value) error {
 		return err
 	}
 
+	// experimental block
+	//
+	var storedId uint32
+	entries := kvs.ConvertToEntries(value.TableName(), owner, 0, value)
+	for _, e := range entries {
+		r, err := s.bpdb.Store(context.Background(), &pb.StoreRequest{
+			Key:  string(e.Key()),
+			Data: e.Data,
+			Meta: []byte{e.Meta},
+		})
+		if err != nil {
+			return err
+		}
+		storedId = r.GetId()
+	}
+	return kvs.LoadID(value, storedId)
+	//
+
 	return saveValue(s.db, value.TableName(), owner, rowID, value)
 }
 

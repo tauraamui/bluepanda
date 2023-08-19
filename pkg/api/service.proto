@@ -8,7 +8,8 @@ option java_outer_classname = "BluePandaProto";
 package bluepanda;
 
 service BluePanda {
-  rpc NextRowID (NextRowIDRequest) returns (NextRowIDResponse) {}
+  rpc NextRowID (NextRowIDRequest) returns (NextRowIDResult) {}
+  rpc Store (StoreRequest) returns (StoreResult) {}
   rpc Fetch (FetchRequest) returns (stream FetchResult) {}
   rpc Insert (InsertRequest) returns (InsertResult) {}
 }
@@ -18,7 +19,17 @@ message NextRowIDRequest {
   string type = 2;
 }
 
-message NextRowIDResponse {
+message NextRowIDResult {
+  uint32 id = 1;
+}
+
+message StoreRequest {
+  string key = 1;
+  bytes data = 2;
+  bytes meta = 3;
+}
+
+message StoreResult {
   uint32 id = 1;
 }
 
