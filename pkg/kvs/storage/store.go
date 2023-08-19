@@ -59,6 +59,7 @@ func New(db kvs.KVDB) Store {
 }
 
 func Connect(addr string) (*Store, error) {
+	// TODO(tauraamui): re-think how to establish/connect to a remote KVS, do the connect in here or NOT?
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
@@ -68,6 +69,7 @@ func Connect(addr string) (*Store, error) {
 }
 
 func (s Store) Save(owner kvs.UUID, value Value) error {
+	// TODO(tauraamui): re-think how to alternate between local and rpc calls
 	if s.bpdb != nil {
 		ridResp, err := s.bpdb.NextRowID(context.Background(), &pb.NextRowIDRequest{Uuid: owner.String(), Type: value.TableName()})
 		if err != nil {
