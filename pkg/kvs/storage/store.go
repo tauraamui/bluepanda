@@ -32,7 +32,6 @@
 package storage
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -48,14 +47,20 @@ type Value interface {
 	TableName() string
 }
 
-type Store struct {
+type store struct {
 	db   kvs.KVDB
 	bpdb pb.BluePandaClient
 	pks  map[string]*badger.Sequence
 }
 
+type Store interface {
+	Save(owner kvs.UUID, value Value) error
+	Update(owner kvs.UUID, value Value, rowID uint32) error
+	Delete(owner kvs.UUID, value Value, rowID uint32) error
+}
+
 func New(db kvs.KVDB) Store {
-	return Store{db: db, pks: map[string]*badger.Sequence{}}
+	return store{db: db, pks: map[string]*badger.Sequence{}}
 }
 
 func Connect(addr string) (*Store, error) {
@@ -65,41 +70,14 @@ func Connect(addr string) (*Store, error) {
 		return nil, err
 	}
 
-	return &Store{bpdb: pb.NewBluePandaClient(conn)}, nil
+	return store{bpdb: pb.NewBluePandaClient(conn)}, nil
 }
 
 func (s Store) Save(owner kvs.UUID, value Value) error {
-	// TODO(tauraamui): re-think how to alternate between local and rpc calls
-	if s.bpdb != nil {
-		ridResp, err := s.bpdb.NextRowID(context.Background(), &pb.NextRowIDRequest{Uuid: owner.String(), Type: value.TableName()})
-		if err != nil {
-			return err
-		}
-		ridResp.GetId()
-		// call "save value" but have it invoke an RPC store method
-	}
 	rowID, err := nextRowID(s.db, owner, value.TableName(), s.pks)
 	if err != nil {
 		return err
 	}
-
-	// experimental block
-	//
-	var storedId uint32
-	entries := kvs.ConvertToEntries(value.TableName(), owner, 0, value)
-	for _, e := range entries {
-		r, err := s.bpdb.Store(context.Background(), &pb.StoreRequest{
-			Key:  string(e.Key()),
-			Data: e.Data,
-			Meta: []byte{e.Meta},
-		})
-		if err != nil {
-			return err
-		}
-		storedId = r.GetId()
-	}
-	return kvs.LoadID(value, storedId)
-	//
 
 	return saveValue(s.db, value.TableName(), owner, rowID, value)
 }
@@ -292,11 +270,7 @@ func nextRowID(db kvs.KVDB, owner kvs.UUID, tableName string, pks map[string]*ba
 		return 0, err
 	}
 
-	s, err := seq.Next()
-	if err != nil {
-		return 0, err
-	}
-	return uint32(s), nil
+	return nextSequence(seq)
 }
 
 func nextSequence(seq *badger.Sequence) (uint32, error) {

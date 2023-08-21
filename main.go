@@ -20,7 +20,11 @@ func main() {
 		defer store.Close()
 	*/
 
-	store := storage.Connect(":3000")
+	store, err := storage.Connect(":3000")
+
+	if err != nil {
+		panic(err)
+	}
 	defer store.Close()
 
 	store.Save(kvs.RootOwner{}, &Fruit{Name: "mango"})

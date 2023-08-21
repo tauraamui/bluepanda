@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	BluePanda_NextRowID_FullMethodName = "/bluepanda.BluePanda/NextRowID"
 	BluePanda_Store_FullMethodName     = "/bluepanda.BluePanda/Store"
+	BluePanda_Get_FullMethodName       = "/bluepanda.BluePanda/Get"
 	BluePanda_Fetch_FullMethodName     = "/bluepanda.BluePanda/Fetch"
 	BluePanda_Insert_FullMethodName    = "/bluepanda.BluePanda/Insert"
 )
@@ -31,6 +32,7 @@ const (
 type BluePandaClient interface {
 	NextRowID(ctx context.Context, in *NextRowIDRequest, opts ...grpc.CallOption) (*NextRowIDResult, error)
 	Store(ctx context.Context, in *StoreRequest, opts ...grpc.CallOption) (*StoreResult, error)
+	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResult, error)
 	Fetch(ctx context.Context, in *FetchRequest, opts ...grpc.CallOption) (BluePanda_FetchClient, error)
 	Insert(ctx context.Context, in *InsertRequest, opts ...grpc.CallOption) (*InsertResult, error)
 }
@@ -55,6 +57,15 @@ func (c *bluePandaClient) NextRowID(ctx context.Context, in *NextRowIDRequest, o
 func (c *bluePandaClient) Store(ctx context.Context, in *StoreRequest, opts ...grpc.CallOption) (*StoreResult, error) {
 	out := new(StoreResult)
 	err := c.cc.Invoke(ctx, BluePanda_Store_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bluePandaClient) Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResult, error) {
+	out := new(GetResult)
+	err := c.cc.Invoke(ctx, BluePanda_Get_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -108,6 +119,7 @@ func (c *bluePandaClient) Insert(ctx context.Context, in *InsertRequest, opts ..
 type BluePandaServer interface {
 	NextRowID(context.Context, *NextRowIDRequest) (*NextRowIDResult, error)
 	Store(context.Context, *StoreRequest) (*StoreResult, error)
+	Get(context.Context, *GetRequest) (*GetResult, error)
 	Fetch(*FetchRequest, BluePanda_FetchServer) error
 	Insert(context.Context, *InsertRequest) (*InsertResult, error)
 	mustEmbedUnimplementedBluePandaServer()
@@ -122,6 +134,9 @@ func (UnimplementedBluePandaServer) NextRowID(context.Context, *NextRowIDRequest
 }
 func (UnimplementedBluePandaServer) Store(context.Context, *StoreRequest) (*StoreResult, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Store not implemented")
+}
+func (UnimplementedBluePandaServer) Get(context.Context, *GetRequest) (*GetResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
 func (UnimplementedBluePandaServer) Fetch(*FetchRequest, BluePanda_FetchServer) error {
 	return status.Errorf(codes.Unimplemented, "method Fetch not implemented")
@@ -174,6 +189,24 @@ func _BluePanda_Store_Handler(srv interface{}, ctx context.Context, dec func(int
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(BluePandaServer).Store(ctx, req.(*StoreRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BluePanda_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BluePandaServer).Get(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BluePanda_Get_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BluePandaServer).Get(ctx, req.(*GetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -231,6 +264,10 @@ var BluePanda_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Store",
 			Handler:    _BluePanda_Store_Handler,
+		},
+		{
+			MethodName: "Get",
+			Handler:    _BluePanda_Get_Handler,
 		},
 		{
 			MethodName: "Insert",

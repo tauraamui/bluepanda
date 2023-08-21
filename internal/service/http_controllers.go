@@ -392,11 +392,7 @@ func nextRowID(db kvs.KVDB, owner kvs.UUID, tableName string, pks map[string]*ba
 		return 0, err
 	}
 
-	s, err := seq.Next()
-	if err != nil {
-		return 0, err
-	}
-	return uint32(s), nil
+	return nextSequence(seq)
 }
 
 func nextSequence(seq *badger.Sequence) (uint32, error) {

@@ -10,6 +10,7 @@ package bluepanda;
 service BluePanda {
   rpc NextRowID (NextRowIDRequest) returns (NextRowIDResult) {}
   rpc Store (StoreRequest) returns (StoreResult) {}
+  rpc Get (GetRequest) returns (GetResult) {}
   rpc Fetch (FetchRequest) returns (stream FetchResult) {}
   rpc Insert (InsertRequest) returns (InsertResult) {}
 }
@@ -29,8 +30,17 @@ message StoreRequest {
   bytes meta = 3;
 }
 
+message GetRequest {
+  string key = 1;
+}
+
+message GetResult {
+  bytes data = 1;
+  bytes meta = 2;
+}
+
 message StoreResult {
-  uint32 id = 1;
+  bool success = 1;
 }
 
 message FetchRequest {

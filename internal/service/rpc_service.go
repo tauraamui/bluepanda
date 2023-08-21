@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/dgraph-io/badger/v3"
+	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"github.com/tauraamui/bluepanda/internal/logging"
 	"github.com/tauraamui/bluepanda/pkg/api"
@@ -76,6 +77,55 @@ func (s *rpcserver) Shutdown() error {
 func (s *rpcserver) ShutdownWithTimeout(d time.Duration) error {
 	s.rpcserver.GracefulStop()
 	return nil
+}
+
+func (s *rpcserver) NextRowID(ctx context.Context, req *pb.NextRowIDRequest) (*pb.NextRowIDResult, error) {
+	id, err := nextRowID(s.db, uuid.MustParse(req.GetUuid()), req.GetType(), s.gpks)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.NextRowIDResult{Id: id}, nil
+}
+
+func (s *rpcserver) Store(ctx context.Context, req *pb.StoreRequest) (*pb.StoreResult, error) {
+	if err := s.db.Update(func(txn *badger.Txn) error {
+		be := badger.NewEntry([]byte(req.GetKey()), req.GetData())
+		mt := func() byte {
+			m := req.GetMeta()
+			if len(m) == 0 {
+				return byte(0)
+			}
+			return m[0]
+		}
+		return txn.SetEntry(be.WithMeta(mt()))
+	}); err != nil {
+		return nil, err
+	}
+	return &pb.StoreResult{Success: true}, nil
+}
+
+func (s *rpcserver) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResult, error) {
+	result := pb.GetResult{}
+	if err := s.db.View(func(txn *badger.Txn) error {
+		lookupKey := req.GetKey()
+		item, err := txn.Get([]byte(lookupKey))
+		if err != nil {
+			return fmt.Errorf("%s: %s", strings.ToLower(err.Error()), lookupKey)
+		}
+
+		if err := item.Value(func(val []byte) error {
+			result.Data = val
+			return nil
+		}); err != nil {
+			return err
+		}
+		result.Meta = []byte{item.UserMeta()}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
 }
 
 func (s *rpcserver) Fetch(req *pb.FetchRequest, stream pb.BluePanda_FetchServer) error {
